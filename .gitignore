@@ -1,3 +1,26 @@
+# For Linux development
+build/*
+./build/
+
+# For Windows+VisualStudio development
+out/*
+./out/
+.vs/*
+./.vs/
+CMakeSettings.json
+
+# Logs
+Logs/*
+./Logs
+
+# Docs
+.html
+**/html/*
+
+# Storage fils
+*/*.bin
+*.bin
+
 # Prerequisites
 *.d
 
