@@ -1,6 +1,4 @@
 #include "Renderer.h"
-#include <raylib.h>
-#include <string>
 
 Renderer::Renderer(int width, int height)
     : screenWidth(width), screenHeight(height) {
@@ -99,6 +97,55 @@ int Renderer::getClickedOption() const {
             static_cast<float>(btnHeight)
         };
         if (CheckCollisionPointRec(mouse, btn)) return i;
+    }
+    return -1;
+}
+
+void Renderer::drawOperationMenu(const std::vector<std::string>& opNames, int selected) const {
+    int menuY = 120;
+    int menuBtnWidth = 160;
+    int menuBtnHeight = 50;
+    int menuSpacing = 30;
+    int totalWidth = opNames.size() * menuBtnWidth + (opNames.size() - 1) * menuSpacing;
+    int startX = (screenWidth - totalWidth) / 2;
+    for (size_t i = 0; i < opNames.size(); ++i) {
+        Rectangle btn = {
+            static_cast<float>(startX + i * (menuBtnWidth + menuSpacing)),
+            static_cast<float>(menuY),
+            static_cast<float>(menuBtnWidth),
+            static_cast<float>(menuBtnHeight)
+        };
+        Color btnColor = LIGHTGRAY;
+        Vector2 mouse = GetMousePosition();
+        if (CheckCollisionPointRec(mouse, btn)) 
+            btnColor = SKYBLUE;
+            
+        DrawRectangleRec(btn, btnColor);
+        DrawRectangleLinesEx(btn, 2, DARKGRAY);
+        DrawText(opNames[i].c_str(),
+                 static_cast<int>(btn.x) + menuBtnWidth / 2 - MeasureText(opNames[i].c_str(), 28) / 2,
+                 menuY + menuBtnHeight / 2 - 14,
+                 28, BLACK);
+    }
+}
+
+int Renderer::getClickedOperation(const std::vector<std::string>& opNames) const {
+    if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return -1;
+    int menuY = 120;
+    int menuBtnWidth = 160;
+    int menuBtnHeight = 50;
+    int menuSpacing = 30;
+    int totalWidth = opNames.size() * menuBtnWidth + (opNames.size() - 1) * menuSpacing;
+    int startX = (screenWidth - totalWidth) / 2;
+    Vector2 mouse = GetMousePosition();
+    for (size_t i = 0; i < opNames.size(); ++i) {
+        Rectangle btn = {
+            static_cast<float>(startX + i * (menuBtnWidth + menuSpacing)),
+            static_cast<float>(menuY),
+            static_cast<float>(menuBtnWidth),
+            static_cast<float>(menuBtnHeight)
+        };
+        if (CheckCollisionPointRec(mouse, btn)) return static_cast<int>(i);
     }
     return -1;
 }

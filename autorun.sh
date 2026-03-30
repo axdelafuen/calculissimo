@@ -16,11 +16,7 @@ cmake --build ./build
 
 # Run
 if [ $? -eq 0 ]; then
-    if [ "$1" = "run" ]; then
-        ./build/xale-db-debug
-    elif [ "$1" = "tests" ]; then
-        ./build/xale-db-tests
-    fi
+        ./build/calculissimo
 else
-    exit 1
+    exit 1;
 fi

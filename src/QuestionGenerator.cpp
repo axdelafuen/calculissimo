@@ -1,17 +1,38 @@
 #include "QuestionGenerator.h"
+#include "Operations.h"
 #include <cstdlib>
+
+QuestionGenerator::QuestionGenerator() : selectedOperationIndex(0) {
+    operations.emplace_back(std::make_unique<Addition>());
+    operations.emplace_back(std::make_unique<Subtraction>());
+    operations.emplace_back(std::make_unique<Multiplication>());
+}
+
+void QuestionGenerator::setOperationIndex(int idx) {
+    if (idx >= 0 && idx < static_cast<int>(operations.size())) {
+        selectedOperationIndex = idx;
+    }
+}
+
+int QuestionGenerator::getOperationCount() const {
+    return static_cast<int>(operations.size());
+}
+
+const Operation* QuestionGenerator::getOperation(int idx) const {
+    if (idx >= 0 && idx < static_cast<int>(operations.size())) {
+        return operations[idx].get();
+    }
+    return nullptr;
+}
 
 Question QuestionGenerator::generate() const {
     Question q;
     q.a = rand() % 20 + 1;
     q.b = rand() % 20 + 1;
 
-    int opType = rand() % 3;
-    switch (opType) {
-        case 0: q.op = '+'; q.correctAnswer = q.a + q.b; break;
-        case 1: q.op = '-'; q.correctAnswer = q.a - q.b; break;
-        case 2: q.op = 'x'; q.correctAnswer = q.a * q.b; break;
-    }
+    const Operation* op = operations[selectedOperationIndex].get();
+    q.op = op->getSymbol();
+    q.correctAnswer = op->compute(q.a, q.b);
 
     q.correctIndex = rand() % 3;
 

@@ -1,16 +1,34 @@
 #include "Game.h"
 #include <cstdlib>
 #include <ctime>
+#include <cstdio>
+#include <string>
 
 Game::Game()
-    : renderer(800, 450), score(0), total(0),
-      showResult(false), wasCorrect(false), resultTimer(0.0f) {
-    srand(static_cast<unsigned>(time(nullptr)));
-    current = generator.generate();
+        : renderer(800, 450), score(0), total(0),
+            showResult(false), wasCorrect(false), resultTimer(0.0f), selectingOperation(true) {
+        srand(static_cast<unsigned>(time(nullptr)));
 }
 
 void Game::run() {
+    std::vector<std::string> opNames;
+    for (int i = 0; i < generator.getOperationCount(); ++i) {
+        opNames.push_back(std::string(1, generator.getOperation(i)->getSymbol()));
+    }
     while (!renderer.shouldClose()) {
+        if (selectingOperation) {
+            renderer.beginFrame();
+            renderer.drawTitle();
+            renderer.drawOperationMenu(opNames, generator.getOperationCount() > 0 ? 0 : -1);
+            renderer.endFrame();
+            int clicked = renderer.getClickedOperation(opNames);
+            if (clicked >= 0) {
+                generator.setOperationIndex(clicked);
+                current = generator.generate();
+                selectingOperation = false;
+            }
+            continue;
+        }
         handleInput();
         update();
 
