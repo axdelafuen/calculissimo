@@ -3,6 +3,7 @@
 #include "QuestionGenerator.h"
 #include "Renderer.h"
 #include "Difficulty.h"
+#include "History.h"
 
 // All possible screens / phases of the application.
 // The state machine is the backbone of Game::run(); each state maps to a
@@ -23,6 +24,7 @@ class Game {
         // ---- Subsystems ----
         Renderer renderer;
         QuestionGenerator generator;
+        History history;
 
         // ---- Game state ----
         GameState state;

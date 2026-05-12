@@ -247,7 +247,8 @@ void Renderer::drawTimer(float timeLeft, float timeTotal) const {
 // Results screen
 // ---------------------------------------------------------------------------
 
-void Renderer::drawResults(int score, int total, const char* diffLabel) const {
+void Renderer::drawResults(int score, int total, const char* diffLabel,
+                            int allTimeCorrect, int allTimeTotal) const {
     drawMenuTitle("Session over!");
 
     std::string sub = std::string("Difficulty: ") + diffLabel;
@@ -275,6 +276,15 @@ void Renderer::drawResults(int score, int total, const char* diffLabel) const {
     // "Play again" button
     Rectangle btn = {(float)(SCREEN_W / 2 - 110), 370.0f, 220.0f, 55.0f};
     drawButton(btn, "Play again", 26, SKYBLUE, ColorBrightness(SKYBLUE, 0.3f), BLACK);
+
+    // All-time stats from history
+    if (allTimeTotal > 0) {
+        std::string hist = "All-time: " + std::to_string(allTimeCorrect)
+                         + " / " + std::to_string(allTimeTotal) + " correct";
+        DrawText(hist.c_str(),
+                 SCREEN_W / 2 - MeasureText(hist.c_str(), 18) / 2,
+                 445, 18, GRAY);
+    }
 }
 
 bool Renderer::getClickedPlayAgain() const {

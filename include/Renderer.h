@@ -45,7 +45,8 @@ class Renderer {
         int  getClickedOption() const;
 
         // ---- Results screen ----
-        void drawResults(int score, int total, const char* diffLabel) const;
+        void drawResults(int score, int total, const char* diffLabel,
+                         int allTimeCorrect, int allTimeTotal) const;
         // Returns true when the player clicks "Play again"
         bool getClickedPlayAgain() const;
 

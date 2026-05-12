@@ -1,4 +1,5 @@
 #include "Game.h"
+#include "HistoryEntry.h"
 #include <cstdlib>
 #include <ctime>
 #include <string>
@@ -113,6 +114,17 @@ void Game::handlePlaying() {
             ++total;
             wasCorrect = (clicked == current.correctIndex);
             if (wasCorrect) ++score;
+
+            // Record this attempt in the persistent history
+            HistoryEntry entry;
+            entry.question      = std::to_string(current.a) + " " + current.op
+                                  + " " + std::to_string(current.b) + " = ?";
+            entry.givenAnswer   = current.options[clicked];
+            entry.correctAnswer = current.correctAnswer;
+            entry.wasCorrect    = wasCorrect;
+            entry.timestamp     = std::time(nullptr);
+            history.record(entry);
+
             showResult  = true;
             resultTimer = 1.0f;
         }
@@ -148,8 +160,15 @@ void Game::handlePlaying() {
 // ---------------------------------------------------------------------------
 
 void Game::handleResults() {
+    // Compute all-time stats from history
+    int allCorrect = 0, allTotal = 0;
+    for (const auto& e : history.entries()) {
+        ++allTotal;
+        if (e.wasCorrect) ++allCorrect;
+    }
+
     renderer.beginFrame();
-    renderer.drawResults(score, total, diffConfig.label);
+    renderer.drawResults(score, total, diffConfig.label, allCorrect, allTotal);
     renderer.endFrame();
 
     if (renderer.getClickedPlayAgain()) {
