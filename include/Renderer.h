@@ -50,8 +50,15 @@ class Renderer {
         // Returns true when the player clicks "Play again"
         bool getClickedPlayAgain() const;
 
-        // ESC is checked by the game loop directly via raylib; the renderer
-        // just exposes an "is back pressed" helper for consistency.
+        // ---- Mascot panel overlay ----
+        // Draws selection buttons for each mascot + toggle visibility button.
+        // selectedIdx = currently loaded mascot index (-1 = none).
+        // visible = whether the mascot panel is shown.
+        void drawMascotMenu(int selectedIdx, bool visible) const;
+        int  getClickedMascot() const;      // returns 0..3 or -1
+        bool getClickedToggleMascot() const;
+
+        // ---- ESC helper ----
         bool isBackPressed() const;
 
     private:

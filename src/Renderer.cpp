@@ -292,3 +292,50 @@ bool Renderer::getClickedPlayAgain() const {
     return isClicked(btn);
 }
 
+// ---------------------------------------------------------------------------
+// Mascot menu
+// ---------------------------------------------------------------------------
+#include "MascotDef.h"
+
+void Renderer::drawMascotMenu(int selectedIdx, bool visible) const {
+    drawMenuTitle("Choose your mascot");
+
+    const int btnW = 160, btnH = 50, spacing = 20;
+    int totalW = MASCOT_COUNT * btnW + (MASCOT_COUNT - 1) * spacing;
+    int startX = (SCREEN_W - totalW) / 2;
+
+    for (int i = 0; i < MASCOT_COUNT; ++i) {
+        Rectangle btn = {
+            static_cast<float>(startX + i * (btnW + spacing)),
+            160.0f, static_cast<float>(btnW), static_cast<float>(btnH)
+        };
+        Color idle = (i == selectedIdx) ? GOLD : LIGHTGRAY;
+        drawButton(btn, MASCOTS[i].name, 22, idle, SKYBLUE, BLACK);
+    }
+
+    // Toggle visibility button
+    Rectangle toggleBtn = {(float)(SCREEN_W / 2 - 120), 240.0f, 240.0f, 50.0f};
+    const char* toggleLabel = visible ? "Hide mascot" : "Show mascot";
+    drawButton(toggleBtn, toggleLabel, 22, LIGHTGRAY, ORANGE, BLACK);
+}
+
+int Renderer::getClickedMascot() const {
+    if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return -1;
+    const int btnW = 160, btnH = 50, spacing = 20;
+    int totalW = MASCOT_COUNT * btnW + (MASCOT_COUNT - 1) * spacing;
+    int startX = (SCREEN_W - totalW) / 2;
+    for (int i = 0; i < MASCOT_COUNT; ++i) {
+        Rectangle btn = {
+            static_cast<float>(startX + i * (btnW + spacing)),
+            160.0f, static_cast<float>(btnW), static_cast<float>(btnH)
+        };
+        if (CheckCollisionPointRec(GetMousePosition(), btn)) return i;
+    }
+    return -1;
+}
+
+bool Renderer::getClickedToggleMascot() const {
+    Rectangle btn = {(float)(SCREEN_W / 2 - 120), 240.0f, 240.0f, 50.0f};
+    return isClicked(btn);
+}
+

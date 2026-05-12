@@ -10,8 +10,11 @@ Game::Game()
       score(0), total(0),
       showResult(false), wasCorrect(false), resultTimer(0.0f),
       sessionTimer(0.0f), sessionOver(false),
-      selectedOperation(0), selectedDifficulty(Difficulty::EASY) {
+      selectedOperation(0), selectedDifficulty(Difficulty::EASY),
+      stateBeforeMascot(GameState::OPERATION_MENU) {
     srand(static_cast<unsigned>(time(nullptr)));
+    // Load the first mascot by default so the player immediately sees one
+    mascot.load(0);
 }
 
 // ---------------------------------------------------------------------------
@@ -25,6 +28,7 @@ void Game::run() {
             case GameState::DIFFICULTY_MENU: handleDifficultyMenu(); break;
             case GameState::PLAYING:         handlePlaying();        break;
             case GameState::RESULTS:         handleResults();        break;
+            case GameState::MASCOT_MENU:     handleMascotMenu();     break;
         }
     }
 }
@@ -34,11 +38,25 @@ void Game::run() {
 // ---------------------------------------------------------------------------
 
 void Game::handleOperationMenu() {
+    mascot.update(renderer.getFrameTime());
+
+    // Press M to open mascot selection
+    if (IsKeyPressed(KEY_M)) {
+        stateBeforeMascot = state;
+        state = GameState::MASCOT_MENU;
+        return;
+    }
+
     renderer.beginFrame();
     std::vector<std::string> names;
     for (int i = 0; i < generator.getOperationCount(); ++i)
         names.push_back(std::string(1, generator.getOperation(i)->getSymbol()));
     renderer.drawOperationMenu(names);
+    // Small hint
+    DrawText("Press M to change mascot",
+             Renderer::GAME_AREA_W / 2 - MeasureText("Press M to change mascot", 16) / 2,
+             560, 16, GRAY);
+    mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
     renderer.endFrame();
 
     int clicked = renderer.getClickedOperation(names);
@@ -54,8 +72,11 @@ void Game::handleOperationMenu() {
 // ---------------------------------------------------------------------------
 
 void Game::handleDifficultyMenu() {
+    mascot.update(renderer.getFrameTime());
+
     renderer.beginFrame();
     renderer.drawDifficultyMenu();
+    mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
     renderer.endFrame();
 
     // ESC goes back to operation selection
@@ -84,6 +105,7 @@ void Game::handleDifficultyMenu() {
 
 void Game::handlePlaying() {
     float dt = renderer.getFrameTime();
+    mascot.update(dt);
 
     // ESC returns to the main menu
     if (renderer.isBackPressed()) {
@@ -125,6 +147,10 @@ void Game::handlePlaying() {
             entry.timestamp     = std::time(nullptr);
             history.record(entry);
 
+            // Trigger the matching mascot animation
+            if (wasCorrect) mascot.playCorrect();
+            else            mascot.playWrong();
+
             showResult  = true;
             resultTimer = 1.0f;
         }
@@ -152,6 +178,7 @@ void Game::handlePlaying() {
     renderer.drawQuestion(current);
     renderer.drawOptions(current, showResult);
     if (showResult) renderer.drawResult(wasCorrect);
+    mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
     renderer.endFrame();
 }
 
@@ -160,7 +187,8 @@ void Game::handlePlaying() {
 // ---------------------------------------------------------------------------
 
 void Game::handleResults() {
-    // Compute all-time stats from history
+    mascot.update(renderer.getFrameTime());
+
     int allCorrect = 0, allTotal = 0;
     for (const auto& e : history.entries()) {
         ++allTotal;
@@ -169,10 +197,35 @@ void Game::handleResults() {
 
     renderer.beginFrame();
     renderer.drawResults(score, total, diffConfig.label, allCorrect, allTotal);
+    mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
     renderer.endFrame();
 
     if (renderer.getClickedPlayAgain()) {
         state = GameState::OPERATION_MENU;
     }
+}
+
+// ---------------------------------------------------------------------------
+// State: mascot selection menu
+// ---------------------------------------------------------------------------
+
+void Game::handleMascotMenu() {
+    mascot.update(renderer.getFrameTime());
+
+    renderer.beginFrame();
+    renderer.drawMascotMenu(mascot.currentIndex(), mascot.isVisible());
+    mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
+    renderer.endFrame();
+
+    // ESC or M closes the menu
+    if (renderer.isBackPressed() || IsKeyPressed(KEY_M)) {
+        state = stateBeforeMascot;
+        return;
+    }
+
+    int clicked = renderer.getClickedMascot();
+    if (clicked >= 0) mascot.load(clicked);
+
+    if (renderer.getClickedToggleMascot()) mascot.toggleVisible();
 }
 

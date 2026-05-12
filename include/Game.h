@@ -4,6 +4,7 @@
 #include "Renderer.h"
 #include "Difficulty.h"
 #include "History.h"
+#include "Mascot.h"
 
 // All possible screens / phases of the application.
 // The state machine is the backbone of Game::run(); each state maps to a
@@ -13,6 +14,7 @@ enum class GameState {
     DIFFICULTY_MENU,  // step 2: choose difficulty level
     PLAYING,          // active gameplay
     RESULTS,          // end-of-session summary
+    MASCOT_MENU,      // mascot selection overlay
 };
 
 class Game {
@@ -25,6 +27,7 @@ class Game {
         Renderer renderer;
         QuestionGenerator generator;
         History history;
+        Mascot mascot;
 
         // ---- Game state ----
         GameState state;
@@ -49,4 +52,8 @@ class Game {
         void handleDifficultyMenu();
         void handlePlaying();
         void handleResults();
+        void handleMascotMenu();
+
+        // ---- State before entering mascot menu ----
+        GameState stateBeforeMascot;
 };
