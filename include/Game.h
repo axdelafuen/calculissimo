@@ -11,6 +11,7 @@ enum class GameState {
     OPERATION_MENU,   // step 1: choose arithmetic operation
     DIFFICULTY_MENU,  // step 2: choose difficulty level
     PLAYING,          // active gameplay
+    RESULTS,          // end-of-session summary
 };
 
 class Game {
@@ -33,6 +34,10 @@ class Game {
         bool wasCorrect;
         float resultTimer;
 
+        // ---- Timed session ----
+        float sessionTimer;   // seconds remaining (0 = unlimited)
+        bool  sessionOver;    // true once time or question count is exhausted
+
         // ---- Menu selections ----
         int selectedOperation;
         Difficulty selectedDifficulty;
@@ -41,4 +46,5 @@ class Game {
         void handleOperationMenu();
         void handleDifficultyMenu();
         void handlePlaying();
+        void handleResults();
 };

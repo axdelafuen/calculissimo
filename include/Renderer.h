@@ -40,7 +40,14 @@ class Renderer {
         void drawQuestion(const Question& q) const;
         void drawOptions(const Question& q, bool showResult) const;
         void drawResult(bool wasCorrect) const;
+        // Draws a countdown bar; timeLeft=0 hides it (unlimited mode).
+        void drawTimer(float timeLeft, float timeTotal) const;
         int  getClickedOption() const;
+
+        // ---- Results screen ----
+        void drawResults(int score, int total, const char* diffLabel) const;
+        // Returns true when the player clicks "Play again"
+        bool getClickedPlayAgain() const;
 
         // ESC is checked by the game loop directly via raylib; the renderer
         // just exposes an "is back pressed" helper for consistency.

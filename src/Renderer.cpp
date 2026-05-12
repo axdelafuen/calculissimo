@@ -222,3 +222,63 @@ int Renderer::getClickedOption() const {
     return -1;
 }
 
+void Renderer::drawTimer(float timeLeft, float timeTotal) const {
+    if (timeTotal <= 0.0f) return;   // unlimited mode — nothing to show
+
+    const int barX = 20, barY = 20, barH = 16;
+    const int barW = GAME_AREA_W - 40;
+
+    float ratio = (timeLeft > 0.0f) ? timeLeft / timeTotal : 0.0f;
+    int filled   = static_cast<int>(barW * ratio);
+
+    // Background track
+    DrawRectangle(barX, barY, barW, barH, LIGHTGRAY);
+    // Filled portion — green → orange → red as time runs out
+    Color fill = (ratio > 0.5f) ? GREEN : (ratio > 0.25f) ? ORANGE : RED;
+    DrawRectangle(barX, barY, filled, barH, fill);
+    DrawRectangleLinesEx({(float)barX, (float)barY, (float)barW, (float)barH}, 2, DARKGRAY);
+
+    // Remaining seconds
+    std::string label = std::to_string(static_cast<int>(timeLeft)) + "s";
+    DrawText(label.c_str(), barX + barW + 6, barY, 16, DARKGRAY);
+}
+
+// ---------------------------------------------------------------------------
+// Results screen
+// ---------------------------------------------------------------------------
+
+void Renderer::drawResults(int score, int total, const char* diffLabel) const {
+    drawMenuTitle("Session over!");
+
+    std::string sub = std::string("Difficulty: ") + diffLabel;
+    DrawText(sub.c_str(),
+             SCREEN_W / 2 - MeasureText(sub.c_str(), 22) / 2,
+             120, 22, DARKGRAY);
+
+    std::string scoreStr = std::to_string(score) + " / " + std::to_string(total) + " correct";
+    DrawText(scoreStr.c_str(),
+             SCREEN_W / 2 - MeasureText(scoreStr.c_str(), 48) / 2,
+             210, 48, BLACK);
+
+    float pct = (total > 0) ? (float)score / total : 0.0f;
+    const char* feedback;
+    Color fbColor;
+    if      (pct >= 0.9f) { feedback = "Excellent!";  fbColor = DARKGREEN; }
+    else if (pct >= 0.7f) { feedback = "Good job!";   fbColor = GREEN;     }
+    else if (pct >= 0.5f) { feedback = "Keep going!"; fbColor = ORANGE;    }
+    else                  { feedback = "Practice more!"; fbColor = RED;     }
+
+    DrawText(feedback,
+             SCREEN_W / 2 - MeasureText(feedback, 32) / 2,
+             280, 32, fbColor);
+
+    // "Play again" button
+    Rectangle btn = {(float)(SCREEN_W / 2 - 110), 370.0f, 220.0f, 55.0f};
+    drawButton(btn, "Play again", 26, SKYBLUE, ColorBrightness(SKYBLUE, 0.3f), BLACK);
+}
+
+bool Renderer::getClickedPlayAgain() const {
+    Rectangle btn = {(float)(SCREEN_W / 2 - 110), 370.0f, 220.0f, 55.0f};
+    return isClicked(btn);
+}
+

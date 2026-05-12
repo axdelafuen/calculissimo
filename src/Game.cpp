@@ -8,6 +8,7 @@ Game::Game()
       diffConfig(getDifficultyConfig(Difficulty::EASY)),
       score(0), total(0),
       showResult(false), wasCorrect(false), resultTimer(0.0f),
+      sessionTimer(0.0f), sessionOver(false),
       selectedOperation(0), selectedDifficulty(Difficulty::EASY) {
     srand(static_cast<unsigned>(time(nullptr)));
 }
@@ -22,6 +23,7 @@ void Game::run() {
             case GameState::OPERATION_MENU:  handleOperationMenu();  break;
             case GameState::DIFFICULTY_MENU: handleDifficultyMenu(); break;
             case GameState::PLAYING:         handlePlaying();        break;
+            case GameState::RESULTS:         handleResults();        break;
         }
     }
 }
@@ -67,6 +69,8 @@ void Game::handleDifficultyMenu() {
         diffConfig = getDifficultyConfig(selectedDifficulty);
         score = 0;
         total = 0;
+        sessionTimer = diffConfig.timeLimit;   // 0 means unlimited
+        sessionOver  = false;
         current = generator.generate(diffConfig);
         showResult = false;
         state = GameState::PLAYING;
@@ -78,9 +82,27 @@ void Game::handleDifficultyMenu() {
 // ---------------------------------------------------------------------------
 
 void Game::handlePlaying() {
+    float dt = renderer.getFrameTime();
+
     // ESC returns to the main menu
     if (renderer.isBackPressed()) {
         state = GameState::OPERATION_MENU;
+        return;
+    }
+
+    // Count-down timer (skip when timeLimit == 0 → unlimited)
+    if (diffConfig.timeLimit > 0.0f && !sessionOver) {
+        sessionTimer -= dt;
+        if (sessionTimer <= 0.0f) {
+            sessionTimer = 0.0f;
+            state = GameState::RESULTS;
+            return;
+        }
+    }
+
+    // Session ends when the question quota is reached
+    if (diffConfig.questionCount > 0 && total >= diffConfig.questionCount && !showResult) {
+        state = GameState::RESULTS;
         return;
     }
 
@@ -98,20 +120,40 @@ void Game::handlePlaying() {
 
     // Update: advance the result display timer
     if (showResult) {
-        resultTimer -= renderer.getFrameTime();
+        resultTimer -= dt;
         if (resultTimer <= 0.0f) {
             showResult = false;
+            // Move to results if quota reached after this answer
+            if (diffConfig.questionCount > 0 && total >= diffConfig.questionCount) {
+                state = GameState::RESULTS;
+                return;
+            }
             current = generator.generate(diffConfig);
         }
     }
 
     // Draw
     renderer.beginFrame();
+    renderer.drawTimer(sessionTimer, diffConfig.timeLimit);
     renderer.drawTitle();
     renderer.drawScore(score, total);
     renderer.drawQuestion(current);
     renderer.drawOptions(current, showResult);
     if (showResult) renderer.drawResult(wasCorrect);
     renderer.endFrame();
+}
+
+// ---------------------------------------------------------------------------
+// State: results
+// ---------------------------------------------------------------------------
+
+void Game::handleResults() {
+    renderer.beginFrame();
+    renderer.drawResults(score, total, diffConfig.label);
+    renderer.endFrame();
+
+    if (renderer.getClickedPlayAgain()) {
+        state = GameState::OPERATION_MENU;
+    }
 }
 
