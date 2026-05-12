@@ -292,6 +292,40 @@ bool Renderer::getClickedPlayAgain() const {
     return isClicked(btn);
 }
 
+void Renderer::drawBadgeNotification(const char* name, const char* desc) const {
+    // Toast in the bottom-left of the game area
+    const int toastW = 340, toastH = 60;
+    const int toastX = 10, toastY = SCREEN_H - toastH - 10;
+    DrawRectangle(toastX, toastY, toastW, toastH, {255, 220, 50, 230});
+    DrawRectangleLinesEx({(float)toastX, (float)toastY, (float)toastW, (float)toastH}, 2, GOLD);
+    std::string header = std::string("Badge unlocked: ") + name;
+    DrawText(header.c_str(), toastX + 8, toastY + 8,  16, BLACK);
+    DrawText(desc,            toastX + 8, toastY + 30, 14, DARKGRAY);
+}
+
+void Renderer::drawBadgeList(const std::vector<Badge>& badges) const {
+    // Small badge grid below the main results content
+    const int startY = 480, cols = 3;
+    const int cellW = 220, cellH = 36, padX = 20;
+    int totalW = cols * cellW + (cols - 1) * padX;
+    int startX = (GAME_AREA_W - totalW) / 2;
+
+    for (int i = 0; i < static_cast<int>(badges.size()); ++i) {
+        int col = i % cols;
+        int row = i / cols;
+        int x = startX + col * (cellW + padX);
+        int y = startY + row * (cellH + 6);
+
+        Color bg  = badges[i].unlocked ? (Color){180, 240, 180, 255} : (Color){220, 220, 220, 180};
+        Color txt = badges[i].unlocked ? BLACK : GRAY;
+        DrawRectangle(x, y, cellW, cellH, bg);
+        DrawRectangleLinesEx({(float)x, (float)y, (float)cellW, (float)cellH}, 1, DARKGRAY);
+
+        std::string label = std::string(badges[i].unlocked ? "★ " : "○ ") + badges[i].name;
+        DrawText(label.c_str(), x + 6, y + (cellH - 16) / 2, 16, txt);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Mascot menu
 // ---------------------------------------------------------------------------

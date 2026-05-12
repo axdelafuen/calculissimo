@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Question.h"
+#include "Badge.h"
 #include <raylib.h>
 #include <vector>
 #include <string>
@@ -47,8 +48,14 @@ class Renderer {
         // ---- Results screen ----
         void drawResults(int score, int total, const char* diffLabel,
                          int allTimeCorrect, int allTimeTotal) const;
-        // Returns true when the player clicks "Play again"
         bool getClickedPlayAgain() const;
+
+        // ---- Badge notifications ----
+        // Draws a toast in the bottom-left for each newly unlocked badge.
+        void drawBadgeNotification(const char* name, const char* desc) const;
+
+        // ---- Badge overview (shown on results screen) ----
+        void drawBadgeList(const std::vector<Badge>& badges) const;
 
         // ---- Mascot panel overlay ----
         // Draws selection buttons for each mascot + toggle visibility button.

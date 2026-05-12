@@ -147,6 +147,12 @@ void Game::handlePlaying() {
             entry.timestamp     = std::time(nullptr);
             history.record(entry);
 
+            // Evaluate badge conditions after recording
+            auto newBadges = badges.evaluate(history.entries(), score, total);
+            for (auto* b : newBadges)
+                pendingBadges.push_back(b);
+            if (!pendingBadges.empty()) badgeNotifTimer = 2.5f;
+
             // Trigger the matching mascot animation
             if (wasCorrect) mascot.playCorrect();
             else            mascot.playWrong();
@@ -178,6 +184,16 @@ void Game::handlePlaying() {
     renderer.drawQuestion(current);
     renderer.drawOptions(current, showResult);
     if (showResult) renderer.drawResult(wasCorrect);
+    // Badge notification toast (displayed on top, fades after timer)
+    if (badgeNotifTimer > 0.0f && !pendingBadges.empty()) {
+        renderer.drawBadgeNotification(pendingBadges.back()->name,
+                                       pendingBadges.back()->description);
+        badgeNotifTimer -= dt;
+        if (badgeNotifTimer <= 0.0f) {
+            pendingBadges.pop_back();
+            if (!pendingBadges.empty()) badgeNotifTimer = 2.5f;
+        }
+    }
     mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
     renderer.endFrame();
 }
@@ -197,6 +213,7 @@ void Game::handleResults() {
 
     renderer.beginFrame();
     renderer.drawResults(score, total, diffConfig.label, allCorrect, allTotal);
+    renderer.drawBadgeList(badges.badges());
     mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
     renderer.endFrame();
 

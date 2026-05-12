@@ -5,6 +5,8 @@
 #include "Difficulty.h"
 #include "History.h"
 #include "Mascot.h"
+#include "BadgeManager.h"
+#include <vector>
 
 // All possible screens / phases of the application.
 // The state machine is the backbone of Game::run(); each state maps to a
@@ -28,6 +30,11 @@ class Game {
         QuestionGenerator generator;
         History history;
         Mascot mascot;
+        BadgeManager badges;
+
+        // Badges to display as a notification (cleared after showing)
+        std::vector<const Badge*> pendingBadges;
+        float badgeNotifTimer = 0.0f;
 
         // ---- Game state ----
         GameState state;
