@@ -1,10 +1,12 @@
 #include "Renderer.h"
+#include <string>
 
-Renderer::Renderer(int width, int height)
-    : screenWidth(width), screenHeight(height) {
-    int totalBtnsWidth = 3 * btnWidth + 2 * btnSpacing;
-    btnStartX = (screenWidth - totalBtnsWidth) / 2;
-    InitWindow(screenWidth, screenHeight, "Calculissimo");
+// ---------------------------------------------------------------------------
+// Window lifecycle
+// ---------------------------------------------------------------------------
+
+Renderer::Renderer() {
+    InitWindow(SCREEN_W, SCREEN_H, "Calculissimo");
     SetTargetFPS(60);
 }
 
@@ -12,140 +14,211 @@ Renderer::~Renderer() {
     CloseWindow();
 }
 
-bool Renderer::shouldClose() const {
-    return WindowShouldClose();
+bool Renderer::shouldClose() const { return WindowShouldClose(); }
+float Renderer::getFrameTime() const { return GetFrameTime(); }
+void Renderer::beginFrame() { BeginDrawing(); ClearBackground(RAYWHITE); }
+void Renderer::endFrame()   { EndDrawing(); }
+bool Renderer::isBackPressed() const { return IsKeyPressed(KEY_ESCAPE); }
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+bool Renderer::isHovered(Rectangle btn) {
+    return CheckCollisionPointRec(GetMousePosition(), btn);
 }
 
-float Renderer::getFrameTime() const {
-    return GetFrameTime();
+bool Renderer::isClicked(Rectangle btn) {
+    return IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && isHovered(btn);
 }
 
-void Renderer::beginFrame() {
-    BeginDrawing();
-    ClearBackground(RAYWHITE);
+void Renderer::drawButton(Rectangle btn, const char* text, int fontSize,
+                           Color idle, Color hover, Color textColor) const {
+    Color fill = isHovered(btn) ? hover : idle;
+    DrawRectangleRec(btn, fill);
+    DrawRectangleLinesEx(btn, 2, DARKGRAY);
+    int tw = MeasureText(text, fontSize);
+    DrawText(text,
+             static_cast<int>(btn.x) + (static_cast<int>(btn.width)  - tw) / 2,
+             static_cast<int>(btn.y) + (static_cast<int>(btn.height) - fontSize) / 2,
+             fontSize, textColor);
 }
 
-void Renderer::endFrame() {
-    EndDrawing();
+void Renderer::drawMenuTitle(const char* text) const {
+    int fs = 36;
+    DrawText(text, SCREEN_W / 2 - MeasureText(text, fs) / 2, 60, fs, DARKBLUE);
 }
 
-void Renderer::drawTitle() {
-    DrawText("CALCULISSIMO",
-             screenWidth / 2 - MeasureText("CALCULISSIMO", 30) / 2,
-             20, 30, DARKGRAY);
+Rectangle Renderer::optionButton(int index) const {
+    int totalW = 3 * BTN_W + 2 * BTN_SPACING;
+    int startX = (GAME_AREA_W - totalW) / 2;
+    return {
+        static_cast<float>(startX + index * (BTN_W + BTN_SPACING)),
+        static_cast<float>(BTN_Y),
+        static_cast<float>(BTN_W),
+        static_cast<float>(BTN_H)
+    };
 }
 
-void Renderer::drawScore(int score, int total) {
+// ---------------------------------------------------------------------------
+// Operation menu
+// ---------------------------------------------------------------------------
+
+void Renderer::drawOperationMenu(const std::vector<std::string>& names) const {
+    drawMenuTitle("Choose an operation");
+
+    const int btnW = 160, btnH = 55, spacing = 25;
+    int totalW = static_cast<int>(names.size()) * btnW +
+                 (static_cast<int>(names.size()) - 1) * spacing;
+    int startX = (SCREEN_W - totalW) / 2;
+
+    for (int i = 0; i < static_cast<int>(names.size()); ++i) {
+        Rectangle btn = {
+            static_cast<float>(startX + i * (btnW + spacing)),
+            160.0f,
+            static_cast<float>(btnW),
+            static_cast<float>(btnH)
+        };
+        drawButton(btn, names[i].c_str(), 28, LIGHTGRAY, SKYBLUE, BLACK);
+    }
+}
+
+int Renderer::getClickedOperation(const std::vector<std::string>& names) const {
+    if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return -1;
+
+    const int btnW = 160, btnH = 55, spacing = 25;
+    int totalW = static_cast<int>(names.size()) * btnW +
+                 (static_cast<int>(names.size()) - 1) * spacing;
+    int startX = (SCREEN_W - totalW) / 2;
+
+    for (int i = 0; i < static_cast<int>(names.size()); ++i) {
+        Rectangle btn = {
+            static_cast<float>(startX + i * (btnW + spacing)),
+            160.0f,
+            static_cast<float>(btnW),
+            static_cast<float>(btnH)
+        };
+        if (CheckCollisionPointRec(GetMousePosition(), btn)) return i;
+    }
+    return -1;
+}
+
+// ---------------------------------------------------------------------------
+// Difficulty menu
+// ---------------------------------------------------------------------------
+
+static const char* DIFF_LABELS[] = {"Easy", "Medium", "Hard"};
+static Color DIFF_COLORS[]       = {GREEN, ORANGE, RED};
+
+void Renderer::drawDifficultyMenu() const {
+    drawMenuTitle("Choose difficulty");
+
+    const char* subtitles[] = {
+        "Small numbers  |  8 questions  |  No time limit",
+        "Normal numbers  |  10 questions  |  90 seconds",
+        "Large numbers  |  15 questions  |  60 seconds"
+    };
+
+    const int btnW = 200, btnH = 60, spacing = 40;
+    int totalW = 3 * btnW + 2 * spacing;
+    int startX = (SCREEN_W - totalW) / 2;
+
+    for (int i = 0; i < 3; ++i) {
+        Rectangle btn = {
+            static_cast<float>(startX + i * (btnW + spacing)),
+            160.0f,
+            static_cast<float>(btnW),
+            static_cast<float>(btnH)
+        };
+        drawButton(btn, DIFF_LABELS[i], 26, DIFF_COLORS[i],
+                   ColorBrightness(DIFF_COLORS[i], 0.3f), BLACK);
+
+        // Sub-label below each button
+        int sw = MeasureText(subtitles[i], 14);
+        DrawText(subtitles[i],
+                 static_cast<int>(btn.x) + (btnW - sw) / 2,
+                 static_cast<int>(btn.y) + btnH + 8,
+                 14, DARKGRAY);
+    }
+}
+
+int Renderer::getClickedDifficulty() const {
+    if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return -1;
+
+    const int btnW = 200, btnH = 60, spacing = 40;
+    int totalW = 3 * btnW + 2 * spacing;
+    int startX = (SCREEN_W - totalW) / 2;
+
+    for (int i = 0; i < 3; ++i) {
+        Rectangle btn = {
+            static_cast<float>(startX + i * (btnW + spacing)),
+            160.0f,
+            static_cast<float>(btnW),
+            static_cast<float>(btnH)
+        };
+        if (CheckCollisionPointRec(GetMousePosition(), btn)) return i;
+    }
+    return -1;
+}
+
+// ---------------------------------------------------------------------------
+// Playing screen
+// ---------------------------------------------------------------------------
+
+void Renderer::drawTitle() const {
+    const char* title = "CALCULISSIMO";
+    DrawText(title,
+             GAME_AREA_W / 2 - MeasureText(title, 30) / 2,
+             20, 30, DARKBLUE);
+}
+
+void Renderer::drawScore(int score, int total) const {
     std::string text = "Score: " + std::to_string(score) + " / " + std::to_string(total);
     DrawText(text.c_str(),
-             screenWidth / 2 - MeasureText(text.c_str(), 20) / 2,
-             65, 20, GRAY);
+             GAME_AREA_W / 2 - MeasureText(text.c_str(), 22) / 2,
+             62, 22, GRAY);
 }
 
-void Renderer::drawQuestion(const Question& q) {
+void Renderer::drawQuestion(const Question& q) const {
     std::string text = std::to_string(q.a) + " " + q.op + " " + std::to_string(q.b) + " = ?";
     DrawText(text.c_str(),
-             screenWidth / 2 - MeasureText(text.c_str(), 50) / 2,
-             140, 50, BLACK);
+             GAME_AREA_W / 2 - MeasureText(text.c_str(), 52) / 2,
+             180, 52, BLACK);
 }
 
-void Renderer::drawOptions(const Question& q, bool showResult) {
+void Renderer::drawOptions(const Question& q, bool showResult) const {
     for (int i = 0; i < 3; i++) {
-        Rectangle btn = {
-            static_cast<float>(btnStartX + i * (btnWidth + btnSpacing)),
-            static_cast<float>(btnY),
-            static_cast<float>(btnWidth),
-            static_cast<float>(btnHeight)
-        };
-
-        Color btnColor = LIGHTGRAY;
+        Rectangle btn = optionButton(i);
+        Color fill;
         if (showResult) {
-            btnColor = (i == q.correctIndex) ? GREEN : MAROON;
+            fill = (i == q.correctIndex) ? GREEN : MAROON;
         } else {
-            Vector2 mouse = GetMousePosition();
-            if (CheckCollisionPointRec(mouse, btn)) btnColor = SKYBLUE;
+            fill = isHovered(btn) ? SKYBLUE : LIGHTGRAY;
         }
-
-        DrawRectangleRec(btn, btnColor);
+        DrawRectangleRec(btn, fill);
         DrawRectangleLinesEx(btn, 2, DARKGRAY);
-
         std::string text = std::to_string(q.options[i]);
+        int tw = MeasureText(text.c_str(), 30);
         DrawText(text.c_str(),
-                 static_cast<int>(btn.x) + btnWidth / 2 - MeasureText(text.c_str(), 30) / 2,
-                 btnY + btnHeight / 2 - 15,
+                 static_cast<int>(btn.x) + (BTN_W - tw) / 2,
+                 static_cast<int>(btn.y) + (BTN_H - 30) / 2,
                  30, BLACK);
     }
 }
 
-void Renderer::drawResult(bool wasCorrect) {
-    const char* msg = wasCorrect ? "Correct !" : "Faux !";
+void Renderer::drawResult(bool wasCorrect) const {
+    const char* msg = wasCorrect ? "Correct!" : "Wrong!";
     Color color = wasCorrect ? DARKGREEN : RED;
     DrawText(msg,
-             screenWidth / 2 - MeasureText(msg, 40) / 2,
-             370, 40, color);
+             GAME_AREA_W / 2 - MeasureText(msg, 40) / 2,
+             400, 40, color);
 }
 
 int Renderer::getClickedOption() const {
     if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return -1;
-
-    Vector2 mouse = GetMousePosition();
     for (int i = 0; i < 3; i++) {
-        Rectangle btn = {
-            static_cast<float>(btnStartX + i * (btnWidth + btnSpacing)),
-            static_cast<float>(btnY),
-            static_cast<float>(btnWidth),
-            static_cast<float>(btnHeight)
-        };
-        if (CheckCollisionPointRec(mouse, btn)) return i;
+        if (CheckCollisionPointRec(GetMousePosition(), optionButton(i))) return i;
     }
     return -1;
 }
 
-void Renderer::drawOperationMenu(const std::vector<std::string>& opNames, int selected) const {
-    int menuY = 120;
-    int menuBtnWidth = 160;
-    int menuBtnHeight = 50;
-    int menuSpacing = 30;
-    int totalWidth = opNames.size() * menuBtnWidth + (opNames.size() - 1) * menuSpacing;
-    int startX = (screenWidth - totalWidth) / 2;
-    for (size_t i = 0; i < opNames.size(); ++i) {
-        Rectangle btn = {
-            static_cast<float>(startX + i * (menuBtnWidth + menuSpacing)),
-            static_cast<float>(menuY),
-            static_cast<float>(menuBtnWidth),
-            static_cast<float>(menuBtnHeight)
-        };
-        Color btnColor = LIGHTGRAY;
-        Vector2 mouse = GetMousePosition();
-        if (CheckCollisionPointRec(mouse, btn)) 
-            btnColor = SKYBLUE;
-            
-        DrawRectangleRec(btn, btnColor);
-        DrawRectangleLinesEx(btn, 2, DARKGRAY);
-        DrawText(opNames[i].c_str(),
-                 static_cast<int>(btn.x) + menuBtnWidth / 2 - MeasureText(opNames[i].c_str(), 28) / 2,
-                 menuY + menuBtnHeight / 2 - 14,
-                 28, BLACK);
-    }
-}
-
-int Renderer::getClickedOperation(const std::vector<std::string>& opNames) const {
-    if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return -1;
-    int menuY = 120;
-    int menuBtnWidth = 160;
-    int menuBtnHeight = 50;
-    int menuSpacing = 30;
-    int totalWidth = opNames.size() * menuBtnWidth + (opNames.size() - 1) * menuSpacing;
-    int startX = (screenWidth - totalWidth) / 2;
-    Vector2 mouse = GetMousePosition();
-    for (size_t i = 0; i < opNames.size(); ++i) {
-        Rectangle btn = {
-            static_cast<float>(startX + i * (menuBtnWidth + menuSpacing)),
-            static_cast<float>(menuY),
-            static_cast<float>(menuBtnWidth),
-            static_cast<float>(menuBtnHeight)
-        };
-        if (CheckCollisionPointRec(mouse, btn)) return static_cast<int>(i);
-    }
-    return -1;
-}

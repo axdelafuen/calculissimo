@@ -26,12 +26,10 @@ const Operation* QuestionGenerator::getOperation(int idx) const {
     return nullptr;
 }
 
-Question QuestionGenerator::generate() const {
+Question QuestionGenerator::generate(const DifficultyConfig& config) const {
     const Operation* op = operations[selectedOperationIndex].get();
 
-    // Let each operation generate operands that are valid for it.
-    // Division overrides this to guarantee integer results.
-    auto [a, b] = op->generateOperands(1, 20);
+    auto [a, b] = op->generateOperands(config.minValue, config.maxValue);
 
     Question q;
     q.a = a;
@@ -46,9 +44,13 @@ Question QuestionGenerator::generate() const {
             q.options[i] = q.correctAnswer;
         } else {
             int wrong;
+            int attempts = 0;
             do {
-                wrong = q.correctAnswer + (rand() % 11) - 5;
-            } while (wrong == q.correctAnswer || wrong < 0);
+                int offset = (rand() % (2 * config.wrongAnswerRange + 1)) - config.wrongAnswerRange;
+                if (offset == 0) offset = 1;
+                wrong = q.correctAnswer + offset;
+                ++attempts;
+            } while ((wrong == q.correctAnswer || wrong < 0) && attempts < 50);
             q.options[i] = wrong;
         }
     }
