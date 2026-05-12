@@ -6,6 +6,7 @@ QuestionGenerator::QuestionGenerator() : selectedOperationIndex(0) {
     operations.emplace_back(std::make_unique<Addition>());
     operations.emplace_back(std::make_unique<Subtraction>());
     operations.emplace_back(std::make_unique<Multiplication>());
+    operations.emplace_back(std::make_unique<Division>());
 }
 
 void QuestionGenerator::setOperationIndex(int idx) {
@@ -26,13 +27,17 @@ const Operation* QuestionGenerator::getOperation(int idx) const {
 }
 
 Question QuestionGenerator::generate() const {
-    Question q;
-    q.a = rand() % 20 + 1;
-    q.b = rand() % 20 + 1;
-
     const Operation* op = operations[selectedOperationIndex].get();
+
+    // Let each operation generate operands that are valid for it.
+    // Division overrides this to guarantee integer results.
+    auto [a, b] = op->generateOperands(1, 20);
+
+    Question q;
+    q.a = a;
+    q.b = b;
     q.op = op->getSymbol();
-    q.correctAnswer = op->compute(q.a, q.b);
+    q.correctAnswer = op->compute(a, b);
 
     q.correctIndex = rand() % 3;
 
@@ -43,7 +48,7 @@ Question QuestionGenerator::generate() const {
             int wrong;
             do {
                 wrong = q.correctAnswer + (rand() % 11) - 5;
-            } while (wrong == q.correctAnswer);
+            } while (wrong == q.correctAnswer || wrong < 0);
             q.options[i] = wrong;
         }
     }
