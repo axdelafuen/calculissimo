@@ -54,9 +54,9 @@ void Game::handleOperationMenu() {
     renderer.drawOperationMenu(names);
     // Small hint
     DrawText("Press M to change mascot",
-             Renderer::GAME_AREA_W / 2 - MeasureText("Press M to change mascot", 16) / 2,
-             560, 16, GRAY);
-    mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
+             renderer.gw() / 2 - MeasureText("Press M to change mascot", 16) / 2,
+             renderer.scaled(560), 16, GRAY);
+    mascot.draw(renderer.mx(), Renderer::MASCOT_PANEL_W, renderer.sh());
     renderer.endFrame();
 
     int clicked = renderer.getClickedOperation(names);
@@ -76,7 +76,7 @@ void Game::handleDifficultyMenu() {
 
     renderer.beginFrame();
     renderer.drawDifficultyMenu();
-    mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
+    mascot.draw(renderer.mx(), Renderer::MASCOT_PANEL_W, renderer.sh());
     renderer.endFrame();
 
     // ESC goes back to operation selection
@@ -194,7 +194,7 @@ void Game::handlePlaying() {
             if (!pendingBadges.empty()) badgeNotifTimer = 2.5f;
         }
     }
-    mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
+    mascot.draw(renderer.mx(), Renderer::MASCOT_PANEL_W, renderer.sh());
     renderer.endFrame();
 }
 
@@ -214,7 +214,7 @@ void Game::handleResults() {
     renderer.beginFrame();
     renderer.drawResults(score, total, diffConfig.label, allCorrect, allTotal);
     renderer.drawBadgeList(badges.badges());
-    mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
+    mascot.draw(renderer.mx(), Renderer::MASCOT_PANEL_W, renderer.sh());
     renderer.endFrame();
 
     if (renderer.getClickedPlayAgain()) {
@@ -231,7 +231,7 @@ void Game::handleMascotMenu() {
 
     renderer.beginFrame();
     renderer.drawMascotMenu(mascot.currentIndex(), mascot.isVisible());
-    mascot.draw(Renderer::MASCOT_PANEL_X, Renderer::MASCOT_PANEL_W, Renderer::SCREEN_H);
+    mascot.draw(renderer.mx(), Renderer::MASCOT_PANEL_W, renderer.sh());
     renderer.endFrame();
 
     // ESC or M closes the menu

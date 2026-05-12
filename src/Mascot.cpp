@@ -21,6 +21,16 @@ void Mascot::unload() {
     loaded_    = false;
 }
 
+// Base colors to use when the GLTF textures are unavailable (the asset files
+// reference absolute Windows-style paths that don't exist in this repo).
+// Each color matches the character's original appearance as closely as possible.
+static const Color MASCOT_COLORS[] = {
+    {90,  60,  110, 255},  // Deathy — dark purple (death-themed murloc)
+    {40,  80,  160, 255},  // Gurgl  — deep blue   (murlocbabyblueblack)
+    {210, 110, 160, 255},  // Gurky  — pink        (murlocbabypink)
+    {185, 210, 225, 255},  // Lurky  — pale white  (murlocbabywhite)
+};
+
 void Mascot::load(int index) {
     unload();
     if (index < 0 || index >= MASCOT_COUNT) return;
@@ -31,7 +41,12 @@ void Mascot::load(int index) {
     currentIndex_ = index;
     loaded_       = true;
 
-    // Start with the idle animation
+    // Apply a characteristic color to every material so the model is not
+    // rendered as a featureless white blob when textures are missing.
+    Color tint = MASCOT_COLORS[index];
+    for (int i = 0; i < model_.materialCount; ++i)
+        model_.materials[i].maps[MATERIAL_MAP_ALBEDO].color = tint;
+
     playAnim(def.idleAnim, true);
 }
 

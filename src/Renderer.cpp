@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include "MascotDef.h"
 #include <string>
 
 // ---------------------------------------------------------------------------
@@ -6,7 +7,9 @@
 // ---------------------------------------------------------------------------
 
 Renderer::Renderer() {
-    InitWindow(SCREEN_W, SCREEN_H, "Calculissimo");
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    InitWindow(1100, 700, "Calculissimo");
+    SetWindowMinSize(MIN_W, MIN_H);
     SetTargetFPS(60);
 }
 
@@ -19,6 +22,21 @@ float Renderer::getFrameTime() const { return GetFrameTime(); }
 void Renderer::beginFrame() { BeginDrawing(); ClearBackground(RAYWHITE); }
 void Renderer::endFrame()   { EndDrawing(); }
 bool Renderer::isBackPressed() const { return IsKeyPressed(KEY_ESCAPE); }
+
+// ---------------------------------------------------------------------------
+// Dynamic layout helpers
+// ---------------------------------------------------------------------------
+
+int Renderer::sw() const { return GetScreenWidth(); }
+int Renderer::sh() const { return GetScreenHeight(); }
+int Renderer::gw() const { return sw() - MASCOT_PANEL_W; }
+int Renderer::mx() const { return sw() - MASCOT_PANEL_W; }
+
+// Scale a value designed for DESIGN_H (700 px) to the current window height.
+int Renderer::scaled(int v) const {
+    int result = static_cast<int>(v * GetScreenHeight() / static_cast<float>(DESIGN_H));
+    return result > 0 ? result : 1;
+}
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -44,19 +62,22 @@ void Renderer::drawButton(Rectangle btn, const char* text, int fontSize,
              fontSize, textColor);
 }
 
+// Menu title centred in the game area (gw), not the full window.
 void Renderer::drawMenuTitle(const char* text) const {
-    int fs = 36;
-    DrawText(text, SCREEN_W / 2 - MeasureText(text, fs) / 2, 60, fs, DARKBLUE);
+    const int fs = 36;
+    DrawText(text, gw() / 2 - MeasureText(text, fs) / 2, scaled(60), fs, DARKBLUE);
 }
 
+// Returns the rectangle for the i-th answer option button.
 Rectangle Renderer::optionButton(int index) const {
-    int totalW = 3 * BTN_W + 2 * BTN_SPACING;
-    int startX = (GAME_AREA_W - totalW) / 2;
+    const int btnW = scaled(180), btnH = scaled(60), spacing = scaled(30);
+    int totalW = 3 * btnW + 2 * spacing;
+    int startX = (gw() - totalW) / 2;
     return {
-        static_cast<float>(startX + index * (BTN_W + BTN_SPACING)),
-        static_cast<float>(BTN_Y),
-        static_cast<float>(BTN_W),
-        static_cast<float>(BTN_H)
+        static_cast<float>(startX + index * (btnW + spacing)),
+        static_cast<float>(scaled(310)),
+        static_cast<float>(btnW),
+        static_cast<float>(btnH)
     };
 }
 
@@ -67,15 +88,15 @@ Rectangle Renderer::optionButton(int index) const {
 void Renderer::drawOperationMenu(const std::vector<std::string>& names) const {
     drawMenuTitle("Choose an operation");
 
-    const int btnW = 160, btnH = 55, spacing = 25;
-    int totalW = static_cast<int>(names.size()) * btnW +
-                 (static_cast<int>(names.size()) - 1) * spacing;
-    int startX = (SCREEN_W - totalW) / 2;
+    const int btnW = scaled(160), btnH = scaled(55), spacing = scaled(25);
+    int n      = static_cast<int>(names.size());
+    int totalW = n * btnW + (n - 1) * spacing;
+    int startX = (gw() - totalW) / 2;  // centre in game area, not full screen
 
-    for (int i = 0; i < static_cast<int>(names.size()); ++i) {
+    for (int i = 0; i < n; ++i) {
         Rectangle btn = {
             static_cast<float>(startX + i * (btnW + spacing)),
-            160.0f,
+            static_cast<float>(scaled(160)),
             static_cast<float>(btnW),
             static_cast<float>(btnH)
         };
@@ -86,15 +107,15 @@ void Renderer::drawOperationMenu(const std::vector<std::string>& names) const {
 int Renderer::getClickedOperation(const std::vector<std::string>& names) const {
     if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return -1;
 
-    const int btnW = 160, btnH = 55, spacing = 25;
-    int totalW = static_cast<int>(names.size()) * btnW +
-                 (static_cast<int>(names.size()) - 1) * spacing;
-    int startX = (SCREEN_W - totalW) / 2;
+    const int btnW = scaled(160), btnH = scaled(55), spacing = scaled(25);
+    int n      = static_cast<int>(names.size());
+    int totalW = n * btnW + (n - 1) * spacing;
+    int startX = (gw() - totalW) / 2;
 
-    for (int i = 0; i < static_cast<int>(names.size()); ++i) {
+    for (int i = 0; i < n; ++i) {
         Rectangle btn = {
             static_cast<float>(startX + i * (btnW + spacing)),
-            160.0f,
+            static_cast<float>(scaled(160)),
             static_cast<float>(btnW),
             static_cast<float>(btnH)
         };
@@ -114,45 +135,44 @@ void Renderer::drawDifficultyMenu() const {
     drawMenuTitle("Choose difficulty");
 
     const char* subtitles[] = {
-        "Small numbers  |  8 questions  |  No time limit",
-        "Normal numbers  |  10 questions  |  90 seconds",
-        "Large numbers  |  15 questions  |  60 seconds"
+        "Small numbers | 8 questions | No limit",
+        "Normal numbers | 10 questions | 90 s",
+        "Large numbers | 15 questions | 60 s"
     };
 
-    const int btnW = 200, btnH = 60, spacing = 40;
+    const int btnW = scaled(200), btnH = scaled(60), spacing = scaled(30);
     int totalW = 3 * btnW + 2 * spacing;
-    int startX = (SCREEN_W - totalW) / 2;
+    int startX = (gw() - totalW) / 2;   // centre in game area
 
     for (int i = 0; i < 3; ++i) {
         Rectangle btn = {
             static_cast<float>(startX + i * (btnW + spacing)),
-            160.0f,
+            static_cast<float>(scaled(160)),
             static_cast<float>(btnW),
             static_cast<float>(btnH)
         };
         drawButton(btn, DIFF_LABELS[i], 26, DIFF_COLORS[i],
                    ColorBrightness(DIFF_COLORS[i], 0.3f), BLACK);
 
-        // Sub-label below each button
-        int sw = MeasureText(subtitles[i], 14);
+        int sw_ = MeasureText(subtitles[i], 13);
         DrawText(subtitles[i],
-                 static_cast<int>(btn.x) + (btnW - sw) / 2,
-                 static_cast<int>(btn.y) + btnH + 8,
-                 14, DARKGRAY);
+                 static_cast<int>(btn.x) + (btnW - sw_) / 2,
+                 static_cast<int>(btn.y + btn.height) + scaled(8),
+                 13, DARKGRAY);
     }
 }
 
 int Renderer::getClickedDifficulty() const {
     if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return -1;
 
-    const int btnW = 200, btnH = 60, spacing = 40;
+    const int btnW = scaled(200), btnH = scaled(60), spacing = scaled(30);
     int totalW = 3 * btnW + 2 * spacing;
-    int startX = (SCREEN_W - totalW) / 2;
+    int startX = (gw() - totalW) / 2;
 
     for (int i = 0; i < 3; ++i) {
         Rectangle btn = {
             static_cast<float>(startX + i * (btnW + spacing)),
-            160.0f,
+            static_cast<float>(scaled(160)),
             static_cast<float>(btnW),
             static_cast<float>(btnH)
         };
@@ -168,22 +188,23 @@ int Renderer::getClickedDifficulty() const {
 void Renderer::drawTitle() const {
     const char* title = "CALCULISSIMO";
     DrawText(title,
-             GAME_AREA_W / 2 - MeasureText(title, 30) / 2,
-             20, 30, DARKBLUE);
+             gw() / 2 - MeasureText(title, 30) / 2,
+             scaled(20), 30, DARKBLUE);
 }
 
 void Renderer::drawScore(int score, int total) const {
     std::string text = "Score: " + std::to_string(score) + " / " + std::to_string(total);
     DrawText(text.c_str(),
-             GAME_AREA_W / 2 - MeasureText(text.c_str(), 22) / 2,
-             62, 22, GRAY);
+             gw() / 2 - MeasureText(text.c_str(), 22) / 2,
+             scaled(62), 22, GRAY);
 }
 
 void Renderer::drawQuestion(const Question& q) const {
     std::string text = std::to_string(q.a) + " " + q.op + " " + std::to_string(q.b) + " = ?";
+    const int fs = 52;
     DrawText(text.c_str(),
-             GAME_AREA_W / 2 - MeasureText(text.c_str(), 52) / 2,
-             180, 52, BLACK);
+             gw() / 2 - MeasureText(text.c_str(), fs) / 2,
+             scaled(180), fs, BLACK);
 }
 
 void Renderer::drawOptions(const Question& q, bool showResult) const {
@@ -197,11 +218,12 @@ void Renderer::drawOptions(const Question& q, bool showResult) const {
         }
         DrawRectangleRec(btn, fill);
         DrawRectangleLinesEx(btn, 2, DARKGRAY);
+
         std::string text = std::to_string(q.options[i]);
         int tw = MeasureText(text.c_str(), 30);
         DrawText(text.c_str(),
-                 static_cast<int>(btn.x) + (BTN_W - tw) / 2,
-                 static_cast<int>(btn.y) + (BTN_H - 30) / 2,
+                 static_cast<int>(btn.x) + (static_cast<int>(btn.width)  - tw) / 2,
+                 static_cast<int>(btn.y) + (static_cast<int>(btn.height) - 30) / 2,
                  30, BLACK);
     }
 }
@@ -210,8 +232,8 @@ void Renderer::drawResult(bool wasCorrect) const {
     const char* msg = wasCorrect ? "Correct!" : "Wrong!";
     Color color = wasCorrect ? DARKGREEN : RED;
     DrawText(msg,
-             GAME_AREA_W / 2 - MeasureText(msg, 40) / 2,
-             400, 40, color);
+             gw() / 2 - MeasureText(msg, 40) / 2,
+             scaled(400), 40, color);
 }
 
 int Renderer::getClickedOption() const {
@@ -223,24 +245,21 @@ int Renderer::getClickedOption() const {
 }
 
 void Renderer::drawTimer(float timeLeft, float timeTotal) const {
-    if (timeTotal <= 0.0f) return;   // unlimited mode — nothing to show
+    if (timeTotal <= 0.0f) return;
 
-    const int barX = 20, barY = 20, barH = 16;
-    const int barW = GAME_AREA_W - 40;
+    const int barX = scaled(20), barY = scaled(20), barH = scaled(16);
+    const int barW = gw() - 2 * barX;
 
-    float ratio = (timeLeft > 0.0f) ? timeLeft / timeTotal : 0.0f;
-    int filled   = static_cast<int>(barW * ratio);
+    float ratio  = (timeLeft > 0.0f) ? timeLeft / timeTotal : 0.0f;
+    int   filled = static_cast<int>(barW * ratio);
 
-    // Background track
     DrawRectangle(barX, barY, barW, barH, LIGHTGRAY);
-    // Filled portion — green → orange → red as time runs out
     Color fill = (ratio > 0.5f) ? GREEN : (ratio > 0.25f) ? ORANGE : RED;
     DrawRectangle(barX, barY, filled, barH, fill);
     DrawRectangleLinesEx({(float)barX, (float)barY, (float)barW, (float)barH}, 2, DARKGRAY);
 
-    // Remaining seconds
     std::string label = std::to_string(static_cast<int>(timeLeft)) + "s";
-    DrawText(label.c_str(), barX + barW + 6, barY, 16, DARKGRAY);
+    DrawText(label.c_str(), barX + barW + scaled(6), barY, 16, DARKGRAY);
 }
 
 // ---------------------------------------------------------------------------
@@ -253,115 +272,148 @@ void Renderer::drawResults(int score, int total, const char* diffLabel,
 
     std::string sub = std::string("Difficulty: ") + diffLabel;
     DrawText(sub.c_str(),
-             SCREEN_W / 2 - MeasureText(sub.c_str(), 22) / 2,
-             120, 22, DARKGRAY);
+             gw() / 2 - MeasureText(sub.c_str(), 22) / 2,
+             scaled(120), 22, DARKGRAY);
 
     std::string scoreStr = std::to_string(score) + " / " + std::to_string(total) + " correct";
+    const int bigFs = 48;
     DrawText(scoreStr.c_str(),
-             SCREEN_W / 2 - MeasureText(scoreStr.c_str(), 48) / 2,
-             210, 48, BLACK);
+             gw() / 2 - MeasureText(scoreStr.c_str(), bigFs) / 2,
+             scaled(200), bigFs, BLACK);
 
-    float pct = (total > 0) ? (float)score / total : 0.0f;
+    float pct = (total > 0) ? static_cast<float>(score) / total : 0.0f;
     const char* feedback;
     Color fbColor;
-    if      (pct >= 0.9f) { feedback = "Excellent!";  fbColor = DARKGREEN; }
-    else if (pct >= 0.7f) { feedback = "Good job!";   fbColor = GREEN;     }
-    else if (pct >= 0.5f) { feedback = "Keep going!"; fbColor = ORANGE;    }
-    else                  { feedback = "Practice more!"; fbColor = RED;     }
+    if      (pct >= 0.9f) { feedback = "Excellent!";     fbColor = DARKGREEN; }
+    else if (pct >= 0.7f) { feedback = "Good job!";      fbColor = GREEN;     }
+    else if (pct >= 0.5f) { feedback = "Keep going!";    fbColor = ORANGE;    }
+    else                  { feedback = "Practice more!"; fbColor = RED;       }
 
     DrawText(feedback,
-             SCREEN_W / 2 - MeasureText(feedback, 32) / 2,
-             280, 32, fbColor);
+             gw() / 2 - MeasureText(feedback, 32) / 2,
+             scaled(270), 32, fbColor);
 
-    // "Play again" button
-    Rectangle btn = {(float)(SCREEN_W / 2 - 110), 370.0f, 220.0f, 55.0f};
-    drawButton(btn, "Play again", 26, SKYBLUE, ColorBrightness(SKYBLUE, 0.3f), BLACK);
-
-    // All-time stats from history
+    // All-time stats
     if (allTimeTotal > 0) {
         std::string hist = "All-time: " + std::to_string(allTimeCorrect)
                          + " / " + std::to_string(allTimeTotal) + " correct";
         DrawText(hist.c_str(),
-                 SCREEN_W / 2 - MeasureText(hist.c_str(), 18) / 2,
-                 445, 18, GRAY);
+                 gw() / 2 - MeasureText(hist.c_str(), 18) / 2,
+                 scaled(320), 18, GRAY);
     }
+
+    // "Play again" button
+    const int btnW = scaled(220), btnH = scaled(55);
+    Rectangle btn = {
+        static_cast<float>(gw() / 2 - btnW / 2),
+        static_cast<float>(scaled(360)),
+        static_cast<float>(btnW),
+        static_cast<float>(btnH)
+    };
+    drawButton(btn, "Play again", 26, SKYBLUE, ColorBrightness(SKYBLUE, 0.3f), BLACK);
 }
 
 bool Renderer::getClickedPlayAgain() const {
-    Rectangle btn = {(float)(SCREEN_W / 2 - 110), 370.0f, 220.0f, 55.0f};
+    const int btnW = scaled(220), btnH = scaled(55);
+    Rectangle btn = {
+        static_cast<float>(gw() / 2 - btnW / 2),
+        static_cast<float>(scaled(360)),
+        static_cast<float>(btnW),
+        static_cast<float>(btnH)
+    };
     return isClicked(btn);
 }
 
+// ---------------------------------------------------------------------------
+// Badge notifications & list
+// ---------------------------------------------------------------------------
+
 void Renderer::drawBadgeNotification(const char* name, const char* desc) const {
-    // Toast in the bottom-left of the game area
-    const int toastW = 340, toastH = 60;
-    const int toastX = 10, toastY = SCREEN_H - toastH - 10;
+    const int toastW = scaled(360), toastH = scaled(60);
+    const int toastX = scaled(10),  toastY = sh() - toastH - scaled(10);
     DrawRectangle(toastX, toastY, toastW, toastH, {255, 220, 50, 230});
-    DrawRectangleLinesEx({(float)toastX, (float)toastY, (float)toastW, (float)toastH}, 2, GOLD);
+    DrawRectangleLinesEx({(float)toastX, (float)toastY,
+                          (float)toastW, (float)toastH}, 2, GOLD);
     std::string header = std::string("Badge unlocked: ") + name;
-    DrawText(header.c_str(), toastX + 8, toastY + 8,  16, BLACK);
-    DrawText(desc,            toastX + 8, toastY + 30, 14, DARKGRAY);
+    DrawText(header.c_str(), toastX + scaled(8), toastY + scaled(8),  16, BLACK);
+    DrawText(desc,            toastX + scaled(8), toastY + scaled(34), 13, DARKGRAY);
 }
 
 void Renderer::drawBadgeList(const std::vector<Badge>& badges) const {
-    // Small badge grid below the main results content
-    const int startY = 480, cols = 3;
-    const int cellW = 220, cellH = 36, padX = 20;
+    const int cols  = 3;
+    const int cellW = scaled(210), cellH = scaled(34), padX = scaled(16);
     int totalW = cols * cellW + (cols - 1) * padX;
-    int startX = (GAME_AREA_W - totalW) / 2;
+    int startX = (gw() - totalW) / 2;
+    int startY = scaled(440);
 
     for (int i = 0; i < static_cast<int>(badges.size()); ++i) {
         int col = i % cols;
         int row = i / cols;
         int x = startX + col * (cellW + padX);
-        int y = startY + row * (cellH + 6);
+        int y = startY + row * (cellH + scaled(5));
 
-        Color bg  = badges[i].unlocked ? (Color){180, 240, 180, 255} : (Color){220, 220, 220, 180};
+        if (y + cellH > sh()) break;   // don't draw off-screen at small heights
+
+        Color bg  = badges[i].unlocked ? (Color){180, 240, 180, 255}
+                                       : (Color){220, 220, 220, 180};
         Color txt = badges[i].unlocked ? BLACK : GRAY;
         DrawRectangle(x, y, cellW, cellH, bg);
-        DrawRectangleLinesEx({(float)x, (float)y, (float)cellW, (float)cellH}, 1, DARKGRAY);
+        DrawRectangleLinesEx({(float)x, (float)y, (float)cellW, (float)cellH},
+                             1, DARKGRAY);
 
-        std::string label = std::string(badges[i].unlocked ? "★ " : "○ ") + badges[i].name;
-        DrawText(label.c_str(), x + 6, y + (cellH - 16) / 2, 16, txt);
+        std::string label = std::string(badges[i].unlocked ? "* " : "o ") + badges[i].name;
+        DrawText(label.c_str(), x + scaled(6), y + (cellH - 15) / 2, 15, txt);
     }
 }
 
 // ---------------------------------------------------------------------------
 // Mascot menu
 // ---------------------------------------------------------------------------
-#include "MascotDef.h"
 
 void Renderer::drawMascotMenu(int selectedIdx, bool visible) const {
     drawMenuTitle("Choose your mascot");
 
-    const int btnW = 160, btnH = 50, spacing = 20;
+    const int btnW = scaled(160), btnH = scaled(50), spacing = scaled(20);
     int totalW = MASCOT_COUNT * btnW + (MASCOT_COUNT - 1) * spacing;
-    int startX = (SCREEN_W - totalW) / 2;
+    int startX = (gw() - totalW) / 2;
 
     for (int i = 0; i < MASCOT_COUNT; ++i) {
         Rectangle btn = {
             static_cast<float>(startX + i * (btnW + spacing)),
-            160.0f, static_cast<float>(btnW), static_cast<float>(btnH)
+            static_cast<float>(scaled(160)),
+            static_cast<float>(btnW),
+            static_cast<float>(btnH)
         };
         Color idle = (i == selectedIdx) ? GOLD : LIGHTGRAY;
         drawButton(btn, MASCOTS[i].name, 22, idle, SKYBLUE, BLACK);
     }
 
-    // Toggle visibility button
-    Rectangle toggleBtn = {(float)(SCREEN_W / 2 - 120), 240.0f, 240.0f, 50.0f};
+    const int togW = scaled(240), togH = scaled(50);
+    Rectangle toggleBtn = {
+        static_cast<float>(gw() / 2 - togW / 2),
+        static_cast<float>(scaled(230)),
+        static_cast<float>(togW),
+        static_cast<float>(togH)
+    };
     const char* toggleLabel = visible ? "Hide mascot" : "Show mascot";
     drawButton(toggleBtn, toggleLabel, 22, LIGHTGRAY, ORANGE, BLACK);
+
+    DrawText("Press M or ESC to close",
+             gw() / 2 - MeasureText("Press M or ESC to close", 15) / 2,
+             scaled(300), 15, GRAY);
 }
 
 int Renderer::getClickedMascot() const {
     if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return -1;
-    const int btnW = 160, btnH = 50, spacing = 20;
+    const int btnW = scaled(160), btnH = scaled(50), spacing = scaled(20);
     int totalW = MASCOT_COUNT * btnW + (MASCOT_COUNT - 1) * spacing;
-    int startX = (SCREEN_W - totalW) / 2;
+    int startX = (gw() - totalW) / 2;
     for (int i = 0; i < MASCOT_COUNT; ++i) {
         Rectangle btn = {
             static_cast<float>(startX + i * (btnW + spacing)),
-            160.0f, static_cast<float>(btnW), static_cast<float>(btnH)
+            static_cast<float>(scaled(160)),
+            static_cast<float>(btnW),
+            static_cast<float>(btnH)
         };
         if (CheckCollisionPointRec(GetMousePosition(), btn)) return i;
     }
@@ -369,7 +421,12 @@ int Renderer::getClickedMascot() const {
 }
 
 bool Renderer::getClickedToggleMascot() const {
-    Rectangle btn = {(float)(SCREEN_W / 2 - 120), 240.0f, 240.0f, 50.0f};
+    const int togW = scaled(240), togH = scaled(50);
+    Rectangle btn = {
+        static_cast<float>(gw() / 2 - togW / 2),
+        static_cast<float>(scaled(230)),
+        static_cast<float>(togW),
+        static_cast<float>(togH)
+    };
     return isClicked(btn);
 }
-
