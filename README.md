@@ -60,11 +60,9 @@ Medium and Hard difficulties have a countdown timer shown as a colour-coded bar 
 Every answered question is appended to `history.csv` with its timestamp, question text, given answer, correct answer, and whether it was right. The all-time correct/total ratio is displayed on the Results screen.
 
 ### 4 · 3D Mascot
-A 3D character is displayed in the right panel throughout the game. Press **M** at any time to open the mascot menu where you can:
-- Switch between the four mascots: **Deathy**, **Gurgl**, **Gurky**, **Lurky**.
+A 3D character is displayed in the right panel throughout the game. Press **M** (or **,** depending your keyboard settings) at any time to open the mascot menu where you can:
+- Switch between the four mascots: **Gurky**, **Gurky**, **Lurky** & **Deathy**.
 - Toggle mascot visibility on/off.
-
-The mascot reacts to gameplay: it plays a celebration animation on a correct answer and a wound animation on a wrong one, then returns to its idle loop.
 
 ### 5 · Badge system (gamification)
 Badges are unlocked by meeting cumulative conditions. A toast notification appears when a badge is earned. The full badge list (locked/unlocked) is shown on the Results screen. Unlocked badges persist in `badges.dat`.
@@ -87,40 +85,48 @@ Badges are unlocked by meeting cumulative conditions. A toast notification appea
 
 ```
 calculissimo/
-├── assets/               # 3D mascot models (GLTF + BIN)
-│   ├── deathy/
-│   ├── gurgl/
-│   ├── gurky/
-│   └── lurky/
+├── assets/glb/           # 3D mascot models (GLB)
+│   ├── Deathy.glb
+│   ├── Gurky.glb
+│   ├── Lurky.glb
+│   └── Murky.glb
 ├── include/              # All header files
-│   ├── Badge.h           # Badge data structure
-│   ├── BadgeManager.h    # Badge evaluation & persistence
-│   ├── Difficulty.h      # Difficulty enum + config
-│   ├── Game.h            # Game state machine
-│   ├── History.h / HistoryEntry.h
-│   ├── Mascot.h / MascotDef.h
-│   ├── Operation.h       # Abstract operation interface
-│   ├── Operations.h      # +, -, x, / implementations
-│   ├── Question.h        # Question data structure
-│   ├── QuestionGenerator.h
-│   └── Renderer.h        # All drawing logic
+│   ├── badge/
+│   │   ├── Badge.h           # Badge data structure
+│   │   └── BadgeManager.h    # Badge evaluation & persistence
+│   ├── core/
+│   │   ├── Difficulty.h      # Difficulty enum + config
+│   │   └── Game.h            # Game state machine
+│   ├── history/
+│   │   ├── History.h
+│   │   └── HistoryEntry.h
+│   ├── mascot/
+│   │   ├── Mascot.h
+│   │   └── MascotDef.h
+│   ├── question/
+│   │   ├── Operation.h       # Abstract operation interface
+│   │   ├── Operations.h      # +, -, x, / implementations
+│   │   ├── Question.h        # Question data structure
+│   │   └── QuestionGenerator.h
+│   └── ui/
+│       └── Renderer.h        # All drawing logic
 ├── src/                  # Implementation files
-│   ├── BadgeManager.cpp
-│   ├── Game.cpp
-│   ├── History.cpp
-│   ├── main.cpp
-│   ├── Mascot.cpp
-│   ├── QuestionGenerator.cpp
-│   └── Renderer.cpp
-├── tests/                # Unit test entry point
+│   ├── badge/
+│   │   └── BadgeManager.cpp
+│   ├── core/
+│   │   └── Game.cpp
+│   ├── history/
+│   │   └── History.cpp
+│   ├── mascot/
+│   │   └── Mascot.cpp
+│   ├── question/
+│   │   └── QuestionGenerator.cpp
+│   ├── ui/
+│   │   └── Renderer.cpp
+│   └── main.cpp
+├── tests/                # Tests
+│   └── main.cpp
 ├── CMakeLists.txt
 └── autorun.sh
 ```
 
-### Key architectural decisions
-
-- **State machine in `Game`** — each screen is a dedicated `handle*()` method; adding a new screen means adding one enum value and one method.
-- **`Operation` polymorphism** — every arithmetic operation is a subclass; `generateOperands()` is virtual so `Division` can enforce integer results without polluting the generator.
-- **`Renderer` isolation** — the renderer only receives plain data and returns clicked indices; swapping the graphics back-end only touches `Renderer`.
-- **`Mascot` sub-viewport** — the 3D mascot uses `rlViewport` + scissor mode to draw into a fixed panel without disturbing the 2D layout.
-- **`BadgeManager` data-driven** — the badge table is a plain array; adding a new badge is a single-line edit with no other code changes required.
