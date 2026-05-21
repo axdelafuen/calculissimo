@@ -61,7 +61,7 @@ Every answered question is appended to `history.csv` with its timestamp, questio
 
 ### 4 · 3D Mascot
 A 3D character is displayed in the right panel throughout the game. Press **M** (or **,** depending your keyboard settings) at any time to open the mascot menu where you can:
-- Switch between the four mascots: **Gurky**, **Gurky**, **Lurky** & **Deathy**.
+- Switch between the four mascots: **Murky**, **Gurky**, **Lurky** & **Deathy**.
 - Toggle mascot visibility on/off.
 
 ### 5 · Badge system (gamification)
